@@ -1,0 +1,73 @@
+version: "3.9"
+services:
+
+  ### Prefect Database
+  database:
+    image: postgres:latest
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=prefect
+    expose:
+      - ${POSTGRES_PORT}
+    volumes: 
+      - db:/var/lib/postgresql/data
+    profiles: ["server"]
+  
+  ### Prefect Server API and UI
+  server:
+    image: ${PREFECT_IMAGE}
+    restart: always
+    volumes:
+      - prefect:/root/.prefect
+    # entrypoint: ["/opt/prefect/entrypoint.sh", "prefect", "server", "start"]
+    environment:
+      - PREFECT_UI_URL=${PREFECT_UI_URL}
+      - PREFECT_API_URL=${PREFECT_API_URL}
+      # If you want to access Prefect Server UI from anywhere other than the Docker host machine, you will need to change
+      # PREFECT_UI_URL and PREFECT_API_URL to match the external hostname/IP of the host machine. For example:
+      #- PREFECT_UI_URL=http://external-ip:4200/api
+      #- PREFECT_API_URL=http://external-ip:4200/api
+      - PREFECT_SERVER_API_HOST=0.0.0.0
+      - PREFECT_API_DATABASE_CONNECTION_URL=postgresql+asyncpg://postgres:postgres@database:${POSTGRES_PORT}/prefect
+      # Uncomment the following line if you want to use the 'S3 Bucket' storage block instead of the older 'S3' storage
+      # - EXTRA_PIP_PACKAGES=prefect-aws
+    ports:
+      - ${PREFECT_SERVER_LOCAL_PORT}:${PREFECT_SERVER_LOCAL_PORT}
+    depends_on:
+      - database
+    command: ["prefect", "server", "start"]
+    profiles: ["server"]
+
+#   ## Prefect Agent
+#   agent:
+#     image: ${PREFECT_IMAGE}
+#     restart: always
+#     entrypoint: ["/opt/prefect/entrypoint.sh", "prefect", "agent", "start", "-q", "YOUR_WORK_QUEUE_NAME"]
+#     environment:
+#       - PREFECT_API_URL=http://server:4200/api
+# #       Use PREFECT_API_KEY if connecting the agent to Prefect Cloud
+# #     - PREFECT_API_KEY=YOUR_API_KEY
+#     profiles: ["agent"]
+
+  ### Prefect CLI
+#   cli:
+#     image: prefecthq/prefect:2.11.5-python3.11
+#     entrypoint: "bash"
+#     working_dir: "/root/flows"
+#     volumes:
+#       - "./flows:/root/flows"
+#     environment:
+#       - PREFECT_API_URL=http://server:4200/api
+# #       Use PREFECT_API_KEY to use the CLI to interact with Prefect Cloud
+# #     - PREFECT_API_KEY=YOUR_API_KEY
+#     profiles: ["cli"]
+      
+volumes:
+  prefect:
+  db:
+  minio:
+networks:
+  default:
+    name: prefect-network
