@@ -9,6 +9,8 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=prefect
+    env_file:
+      - ./config/postgres.env
     expose:
       - ${POSTGRES_PORT}
     volumes: 
@@ -37,7 +39,7 @@ services:
       - ${PREFECT_SERVER_LOCAL_PORT}:${PREFECT_SERVER_LOCAL_PORT}
     depends_on:
       - database
-    command: ["prefect", "server", "start"]
+    command: ["prefect", "server", "start", "--port", "${PREFECT_SERVER_LOCAL_PORT}"]
     profiles: ["server"]
 
 #   ## Prefect Agent
