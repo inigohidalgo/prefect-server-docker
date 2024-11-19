@@ -6,3 +6,5 @@ It spins up
 - a Prefect Server instance
 
 It contains some networking config specific to my setup, but it should work out of the box for testing on a single machine.
+
+Run `compose-up.sh`
